@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Trading Marathon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --asphalt: #1a1a1e;
+    --track: #222228;
+    --lane: #2e2e38;
+    --chalk: #f0ece0;
+    --ghost: #9a9a8a;
+    --finish: #e8c44a;
+    --mile: #4a9eff;
+    --loss: #e05c5c;
+    --gain: #5cb88a;
+    --accent: #e8c44a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--asphalt);
+    color: var(--chalk);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+  }
+
+  header {
+    padding: 48px 40px 24px;
+    border-bottom: 1px solid var(--lane);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    margin-bottom: 4px;
+  }
+
+  .brand-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--chalk);
+  }
+
+  .brand-title span {
+    color: var(--finish);
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: var(--ghost);
+    margin-top: 6px;
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .week-nav button {
+    background: var(--lane);
+    border: none;
+    color: var(--chalk);
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    transition: background 0.15s;
+  }
+
+  .week-nav button:hover { background: #3e3e50; }
+
+  .week-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    min-width: 120px;
+    text-align: center;
+  }
+
+  /* Marathon progress strip */
+  .marathon-strip {
+    background: var(--track);
+    padding: 28px 40px;
+    border-bottom: 1px solid var(--lane);
+  }
+
+  .strip-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-track {
+    position: relative;
+    height: 12px;
+    background: var(--lane);
+    border-radius: 2px;
+    overflow: visible;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--mile) 0%, var(--finish) 100%);
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  .progress-runner {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    filter: drop-shadow(0 0 6px rgba(232,196,74,0.6));
+    animation: bob 1.2s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(-50%) translateY(0); }
+    50% { transform: translateY(-50%) translateY(-2px); }
+  }
+
+  .finish-flag {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    opacity: 0.5;
+  }
+
+  .marathon-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 16px;
+  }
+
+  .m-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .m-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    color: var(--finish);
+  }
+
+  .m-stat-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ghost);
+  }
+
+  /* Main grid */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 0;
+    min-height: calc(100vh - 300px);
+  }
+
+  /* Session log */
+  .sessions-panel {
+    padding: 32px 40px;
+    border-right: 1px solid var(--lane);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    color: var(--chalk);
+  }
+
+  /* Add session form */
+  .add-session {
+    background: var(--track);
+    border: 1px solid var(--lane);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ghost);
+  }
+
+  .field input, .field select {
+    background: var(--asphalt);
+    border: 1px solid var(--lane);
+    color: var(--chalk);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--finish);
+  }
+
+  .field select option { background: var(--asphalt); }
+
+  .btn-add {
+    background: var(--finish);
+    color: var(--asphalt);
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .btn-add:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(0); }
+
+  /* Session list */
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .session-item {
+    background: var(--track);
+    border: 1px solid var(--lane);
+    border-radius: 6px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color 0.15s;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .session-item:hover { border-color: #444; }
+
+  .session-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .session-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-gain { background: var(--gain); box-shadow: 0 0 6px rgba(92,184,138,0.4); }
+  .dot-loss { background: var(--loss); box-shadow: 0 0 6px rgba(224,92,92,0.4); }
+  .dot-flat { background: var(--ghost); }
+
+  .session-info {}
+  .session-date {
+    font-size: 11px;
+    color: var(--ghost);
+    letter-spacing: 0.05em;
+  }
+  .session-note {
+    font-size: 13px;
+    color: var(--chalk);
+    margin-top: 2px;
+  }
+
+  .session-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .session-mins {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.05em;
+    color: var(--finish);
+  }
+
+  .session-mins span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ghost);
+    letter-spacing: 0.1em;
+  }
+
+  .btn-del {
+    background: none;
+    border: none;
+    color: var(--ghost);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px;
+    border-radius: 3px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+
+  .btn-del:hover { color: var(--loss); }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--ghost);
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .empty-state .big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--lane);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .card {
+    background: var(--track);
+    border: 1px solid var(--lane);
+    border-radius: 6px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    margin-bottom: 16px;
+  }
+
+  /* Comparison card */
+  .compare-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .compare-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .compare-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .compare-name { color: var(--chalk); }
+  .compare-time { color: var(--finish); font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.05em; }
+
+  .compare-bar-bg {
+    height: 6px;
+    background: var(--lane);
+    border-radius: 3px;
+  }
+
+  .compare-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .bar-you { background: var(--mile); }
+  .bar-marathon { background: var(--finish); }
+
+  .compare-insight {
+    font-size: 12px;
+    color: var(--ghost);
+    line-height: 1.6;
+    padding-top: 12px;
+    border-top: 1px solid var(--lane);
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .compare-insight strong {
+    color: var(--chalk);
+    font-style: normal;
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+  }
+
+  /* Weekly totals */
+  .week-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wbar-label {
+    font-size: 10px;
+    color: var(--ghost);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .wbar-bg {
+    flex: 1;
+    height: 20px;
+    background: var(--lane);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .wbar-fill {
+    height: 100%;
+    background: var(--mile);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+  }
+
+  .wbar-fill.at-marathon { background: var(--finish); }
+  .wbar-fill.over-marathon { background: var(--gain); }
+
+  .wbar-val {
+    font-size: 9px;
+    color: var(--asphalt);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .wbar-val-outside {
+    font-size: 10px;
+    color: var(--ghost);
+    white-space: nowrap;
+    min-width: 40px;
+  }
+
+  /* Mantras */
+  .mantra-card {
+    border-left: 3px solid var(--finish);
+    padding-left: 16px;
+  }
+
+  .mantra-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--chalk);
+  }
+
+  .mantra-author {
+    font-size: 10px;
+    color: var(--ghost);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* Tabs for week selector display */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--track);
+    border: 1px solid var(--lane);
+    border-radius: 8px;
+    padding: 28px;
+    width: 340px;
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.08em;
+    margin-bottom: 20px;
+  }
+
+  /* Sync bar */
+  .sync-bar {
+    background: #1e1e14;
+    border-bottom: 1px solid #3a3820;
+    padding: 10px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .sync-hint {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: #7a7a5a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sync-hint::before {
+    content: '☁';
+    font-size: 13px;
+    color: var(--finish);
+    opacity: 0.6;
+  }
+
+  .sync-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-sync {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+  }
+
+  .btn-export {
+    background: transparent;
+    border-color: var(--finish);
+    color: var(--finish);
+  }
+
+  .btn-export:hover { background: rgba(232,196,74,0.1); }
+
+  .btn-import {
+    background: transparent;
+    border-color: var(--ghost);
+    color: var(--ghost);
+  }
+
+  .btn-import:hover { background: rgba(154,154,138,0.1); color: var(--chalk); border-color: var(--chalk); }
+
+  #importFile { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--track);
+    border: 1px solid var(--finish);
+    color: var(--chalk);
+    font-size: 12px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Responsive tweaks */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .sessions-panel { border-right: none; border-bottom: 1px solid var(--lane); }
+    .form-row { grid-template-columns: 1fr 1fr; }
+    .btn-add { grid-column: span 2; }
+    header { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 600px) {
+    header, .sessions-panel, .marathon-strip, .sidebar { padding-left: 20px; padding-right: 20px; }
+    .form-row { grid-template-columns: 1fr; }
+    .btn-add { grid-column: 1; }
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+
+  .tag-gain { background: rgba(92,184,138,0.15); color: var(--gain); }
+  .tag-loss { background: rgba(224,92,92,0.15); color: var(--loss); }
+  .tag-flat { background: rgba(154,154,138,0.15); color: var(--ghost); }
+
+  .total-minutes {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--chalk);
+  }
+
+  .total-minutes-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ghost);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-eyebrow">Private · Day Trading Log</div>
+    <div class="brand-title">THE TRADING <span>MARATHON</span></div>
+    <div class="brand-sub">Every minute in the market is a step on the course.</div>
+  </div>
+  <div class="week-nav">
+    <button id="prevWeek">‹</button>
+    <div class="week-label" id="weekLabel">THIS WEEK</div>
+    <button id="nextWeek">›</button>
+  </div>
+</header>
+
+<div class="sync-bar">
+  <div class="sync-hint">To sync across devices: export → save to iCloud Drive → import on other device</div>
+  <div class="sync-actions">
+    <button class="btn-sync btn-export" id="btnExport">⬇ Export Data</button>
+    <button class="btn-sync btn-import" id="btnImport">⬆ Import Data</button>
+    <input type="file" id="importFile" accept=".json">
+  </div>
+</div>
+
+<div class="marathon-strip">
+  <div class="strip-label">
+    <span>YOUR PACE THIS WEEK vs. MARATHON (270 min)</span>
+    <span id="pctLabel">0%</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%">
+      <div class="progress-runner" id="runner">🏃</div>
+    </div>
+    <div class="finish-flag">🏁</div>
+  </div>
+  <div class="marathon-stats">
+    <div class="m-stat">
+      <div class="m-stat-val" id="statMins">0</div>
+      <div class="m-stat-label">Your Minutes</div>
+    </div>
+    <div class="m-stat">
+      <div class="m-stat-val" style="color:var(--ghost)">270</div>
+      <div class="m-stat-label">Marathon (4h 30m)</div>
+    </div>
+    <div class="m-stat">
+      <div class="m-stat-val" id="statDiff">270</div>
+      <div class="m-stat-label" id="statDiffLabel">Min Remaining</div>
+    </div>
+    <div class="m-stat">
+      <div class="m-stat-val" id="statSessions">0</div>
+      <div class="m-stat-label">Sessions</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sessions-panel">
+    <div class="panel-header">
+      <div class="panel-title">SESSIONS</div>
+    </div>
+
+    <div class="add-session">
+      <div class="form-row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="field">
+          <label>Minutes</label>
+          <input type="number" id="inputMins" placeholder="e.g. 45" min="1" max="600">
+        </div>
+        <div class="field">
+          <label>Outcome</label>
+          <select id="inputOutcome">
+            <option value="flat">Flat</option>
+            <option value="gain">Gain</option>
+            <option value="loss">Loss</option>
+          </select>
+        </div>
+        <button class="btn-add" id="btnAdd">LOG IT</button>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Note (optional)</label>
+        <input type="text" id="inputNote" placeholder="Quick reflection on the session...">
+      </div>
+    </div>
+
+    <div class="session-list" id="sessionList">
+      <div class="empty-state">
+        <div class="big">MILE 0</div>
+        Log your first session to start the clock.
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Week Comparison</div>
+      <div class="compare-visual" id="compareVisual">
+        <div class="compare-row">
+          <div class="compare-label">
+            <span class="compare-name">You this week</span>
+            <span class="compare-time" id="cmpYou">0:00</span>
+          </div>
+          <div class="compare-bar-bg">
+            <div class="compare-bar bar-you" id="barYou" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">
+            <span class="compare-name">Marathon baseline</span>
+            <span class="compare-time" style="color:var(--finish)">4:30</span>
+          </div>
+          <div class="compare-bar-bg">
+            <div class="compare-bar bar-marathon" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-insight" id="compareInsight">
+        Start logging sessions — your marathon awaits.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Weekly History</div>
+      <div class="week-bars" id="weekBars">
+        <div style="color:var(--ghost);font-size:12px;text-align:center;padding:16px 0;">No history yet.</div>
+      </div>
+    </div>
+
+    <div class="card mantra-card" id="mantraCard">
+      <div class="card-title">Today's Mile Marker</div>
+      <div class="mantra-text" id="mantraText">The race is long, and in the end, it's only with yourself.</div>
+      <div class="mantra-author">— Patience, mile 1</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MARATHON = 270; // 4h 30m in minutes
+
+const mantras = [
+  { text: "The race is long. Every loss is just a cramp — not the finish line.", author: "Mile 1" },
+  { text: "A marathon runner who quits at mile 10 never learns what their legs can do.", author: "Mile 6" },
+  { text: "Discouragement is the headwind. Patience is your stride.", author: "Mile 13" },
+  { text: "No one medals for the fastest exit. Stay in the race.", author: "Mile 18" },
+  { text: "The market will test you. Your job is to keep running.", author: "Mile 22" },
+  { text: "A bad session is a split time. The race isn't over.", author: "Mile 24" },
+  { text: "Every minute logged is proof you showed up. That matters.", author: "Finish Line" },
+];
+
+let data = JSON.parse(localStorage.getItem('tradingMarathon') || '{"sessions":[]}');
+let currentWeekOffset = 0; // 0 = this week
+
+function getWeekKey(offset = 0) {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7));
+  return monday.toISOString().slice(0,10);
+}
+
+function getWeekRange(offset = 0) {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+
+function isInWeek(dateStr, offset) {
+  const { monday, sunday } = getWeekRange(offset);
+  const d = new Date(dateStr);
+  return d >= monday && d <= sunday;
+}
+
+function save() {
+  localStorage.setItem('tradingMarathon', JSON.stringify(data));
+}
+
+function fmtTime(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}:${String(m).padStart(2,'0')}`;
+}
+
+function getWeekSessions(offset) {
+  return data.sessions.filter(s => isInWeek(s.date, offset));
+}
+
+function totalMins(sessions) {
+  return sessions.reduce((a,b) => a + b.minutes, 0);
+}
+
+function render() {
+  const weekSessions = getWeekSessions(currentWeekOffset);
+  const total = totalMins(weekSessions);
+  const pct = Math.min(100, (total / MARATHON) * 100);
+  const diff = MARATHON - total;
+
+  // Progress bar
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('pctLabel').textContent = Math.round(pct) + '%';
+  document.getElementById('statMins').textContent = total;
+  document.getElementById('statDiff').textContent = diff > 0 ? diff : Math.abs(diff);
+  document.getElementById('statDiffLabel').textContent = diff > 0 ? 'Min Remaining' : 'Min Over Marathon';
+  document.getElementById('statSessions').textContent = weekSessions.length;
+
+  // Runner emoji based on progress
+  const runner = document.getElementById('runner');
+  runner.textContent = pct >= 100 ? '🏆' : pct >= 75 ? '🔥' : '🏃';
+
+  // Week label
+  const { monday, sunday } = getWeekRange(currentWeekOffset);
+  const fmt = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  const lbl = currentWeekOffset === 0 ? 'THIS WEEK' : currentWeekOffset === -1 ? 'LAST WEEK' : `${fmt(monday)} – ${fmt(sunday)}`;
+  document.getElementById('weekLabel').textContent = lbl;
+
+  // Sidebar comparison
+  document.getElementById('cmpYou').textContent = fmtTime(total);
+  document.getElementById('barYou').style.width = pct + '%';
+
+  // Insight
+  let insight = '';
+  if (total === 0) insight = 'Start logging sessions — your marathon awaits.';
+  else if (pct < 25) insight = `You're in the early miles. <strong>${diff} min</strong> to marathon pace — the crowd is just warming up.`;
+  else if (pct < 50) insight = `Past the quarter mark. <strong>${diff} min</strong> to go — this is where discipline forms.`;
+  else if (pct < 75) insight = `Halfway and still moving. <strong>${diff} min</strong> left — most runners find their rhythm here.`;
+  else if (pct < 100) insight = `The wall is ahead. <strong>${diff} min</strong> to finish — don't quit now.`;
+  else insight = `<strong>Marathon complete.</strong> You've outrun the average 45-year-old finisher this week. Patience wins.`;
+  document.getElementById('compareInsight').innerHTML = insight;
+
+  // Session list
+  const list = document.getElementById('sessionList');
+  const sorted = [...weekSessions].sort((a,b) => new Date(b.date) - new Date(a.date));
+  if (sorted.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="big">MILE 0</div>Log your first session to start the clock.</div>`;
+  } else {
+    list.innerHTML = sorted.map(s => {
+      const dotClass = s.outcome === 'gain' ? 'dot-gain' : s.outcome === 'loss' ? 'dot-loss' : 'dot-flat';
+      const tagClass = s.outcome === 'gain' ? 'tag-gain' : s.outcome === 'loss' ? 'tag-loss' : 'tag-flat';
+      const dateDisplay = new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+      return `<div class="session-item">
+        <div class="session-left">
+          <div class="session-dot ${dotClass}"></div>
+          <div class="session-info">
+            <div class="session-date">${dateDisplay}<span class="tag ${tagClass}">${s.outcome}</span></div>
+            <div class="session-note">${s.note || '—'}</div>
+          </div>
+        </div>
+        <div class="session-right">
+          <div class="session-mins">${s.minutes}<span> min</span></div>
+          <button class="btn-del" onclick="deleteSession('${s.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Weekly history bars
+  renderHistory();
+
+  // Mantra
+  const idx = Math.floor((total / MARATHON) * (mantras.length - 1));
+  const m = mantras[Math.min(idx, mantras.length - 1)];
+  document.getElementById('mantraText').textContent = m.text;
+  document.getElementById('mantraCard').querySelector('.mantra-author').textContent = `— ${m.author}`;
+}
+
+function renderHistory() {
+  const container = document.getElementById('weekBars');
+  const weeks = [];
+  for (let i = -5; i <= 0; i++) {
+    const sessions = getWeekSessions(i);
+    const total = totalMins(sessions);
+    const { monday } = getWeekRange(i);
+    weeks.push({ offset: i, total, label: i === 0 ? 'Now' : monday.toLocaleDateString('en-US', {month:'short', day:'numeric'}) });
+  }
+  const max = Math.max(MARATHON, ...weeks.map(w => w.total));
+  if (weeks.every(w => w.total === 0)) {
+    container.innerHTML = `<div style="color:var(--ghost);font-size:12px;text-align:center;padding:16px 0;">No history yet.</div>`;
+    return;
+  }
+  container.innerHTML = weeks.map(w => {
+    const barPct = max > 0 ? (w.total / max) * 100 : 0;
+    const fillClass = w.total >= MARATHON ? 'over-marathon' : w.total >= MARATHON * 0.9 ? 'at-marathon' : '';
+    const showVal = w.total > 0;
+    return `<div class="wbar-row">
+      <div class="wbar-label" style="font-size:9px;width:42px;">${w.label}</div>
+      <div class="wbar-bg">
+        <div class="wbar-fill ${fillClass}" style="width:${barPct}%">
+          ${showVal && barPct > 20 ? `<span class="wbar-val">${w.total}m</span>` : ''}
+        </div>
+      </div>
+      ${showVal && barPct <= 20 ? `<div class="wbar-val-outside">${w.total}m</div>` : '<div class="wbar-val-outside"></div>'}
+    </div>`;
+  }).join('');
+}
+
+function deleteSession(id) {
+  data.sessions = data.sessions.filter(s => s.id !== id);
+  save();
+  render();
+}
+
+document.getElementById('btnAdd').addEventListener('click', () => {
+  const date = document.getElementById('inputDate').value;
+  const mins = parseInt(document.getElementById('inputMins').value);
+  const outcome = document.getElementById('inputOutcome').value;
+  const note = document.getElementById('inputNote').value.trim();
+
+  if (!date || !mins || mins < 1) {
+    document.getElementById('inputDate').style.borderColor = !date ? 'var(--loss)' : '';
+    document.getElementById('inputMins').style.borderColor = !mins ? 'var(--loss)' : '';
+    return;
+  }
+
+  document.getElementById('inputDate').style.borderColor = '';
+  document.getElementById('inputMins').style.borderColor = '';
+
+  const session = {
+    id: Date.now().toString(),
+    date,
+    minutes: mins,
+    outcome,
+    note
+  };
+
+  data.sessions.push(session);
+  save();
+
+  // Reset form
+  document.getElementById('inputMins').value = '';
+  document.getElementById('inputNote').value = '';
+  document.getElementById('inputOutcome').value = 'flat';
+
+  // Jump to the week of the logged session if needed
+  // (stay on current view)
+  render();
+});
+
+document.getElementById('prevWeek').addEventListener('click', () => {
+  currentWeekOffset--;
+  render();
+});
+
+document.getElementById('nextWeek').addEventListener('click', () => {
+  if (currentWeekOffset < 0) { currentWeekOffset++; render(); }
+});
+
+// --- Export / Import ---
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  const exportData = { ...data, exportedAt: new Date().toISOString(), version: 1 };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `trading-marathon-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Exported — save to iCloud Drive to sync');
+});
+
+document.getElementById('btnImport').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.sessions || !Array.isArray(imported.sessions)) throw new Error('Invalid');
+      const existingIds = new Set(data.sessions.map(s => s.id));
+      const newSessions = imported.sessions.filter(s => !existingIds.has(s.id));
+      data.sessions = [...data.sessions, ...newSessions];
+      save();
+      render();
+      showToast(`✓ Merged ${newSessions.length} new session${newSessions.length !== 1 ? 's' : ''}`);
+    } catch {
+      showToast('⚠ Could not read file — make sure it\'s a valid export');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// Set default date to today
+const today = new Date().toISOString().slice(0,10);
+document.getElementById('inputDate').value = today;
+
+// Allow Enter to submit
+document.getElementById('inputNote').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnAdd').click();
+});
+document.getElementById('inputMins').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnAdd').click();
+});
+
+render();
+</script>
+</body>
+</html>
